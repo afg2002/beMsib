@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="{{ url_for('static', filename='tailwind.min.js') }}""></script>
+    <script src="{{ url_for('static', filename='chart.js') }}"></script>
+    <style>
+        .content {
+            margin: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex items-center py-2">
+        <div class="w-24 h-24 bg-cover" style="background-image: url({{ url_for('static', filename='index.jpg') }})"></div>
+        <div class="ml-4">
+            <h3 class="text-lg font-bold">Detailed Report</h3>
+            <p class="font-bold">{{ device_name }}</p>
+            <p>{{ start_date }} - {{ end_date }}</p>
+        </div>
+        <p class="ml-auto font-bold mr-5">{{ customer_name }}</p>
+    </div>
+    <div class="border-t border-black mt-2"></div>
+    <div class="content">
+        <div class="p-3 mt-2">
+            <div class="flex items-center">
+                <img src="{{ url_for('static', filename='health.png') }}" width="100px" height="100px" class="mr-4">
+                <h2 class="text-2xl font-bold">Health Performance</h2>
+            </div>
+        </div>
+        <div class="border-t border-black mb-3"></div>
+        <div class="p-4 shadow-lg border-2 border-gray-300 h-full w-full">
+            <div>
+                <p class="text-xl font-bold">{{ cpu_name  }}</p>
+                <div class="flex mt-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-200 text-orange-500 mr-2">Avg : {{cpu_stats["avg"]}} {{ cpu_unit }}</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-500 mr-2">Min : {{cpu_stats["min"]}}  {{ cpu_unit }}</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-200 text-red-500">Max : {{cpu_stats["max"]}}  {{ cpu_unit }}</span>
+                </div>
+            </div>
+            <div>
+                <canvas id="cpu-chart" class="w-full h-60"></canvas>
+            </div>
+        </div>
+        <div class="p-3 mt-2">
+            <div class="flex items-center">
+                <img src="{{ url_for('static', filename='network.png') }}" width="100px" height="100px" class="mr-4">
+                <h2 class="text-2xl font-bold">Network</h2>
+            </div>
+        </div>
+        <div class="border-t border-black mb-3"></div>
+        <div class="p-4 shadow-lg border-2 border-gray-300  mb-5  h-full w-full">
+            <div>
+                <p class="text-xl font-bold">{{ usage_name  }} 1</p>
+                <div class="flex mt-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-200 text-orange-500 mr-2">Avg : {{usage1_stats['avg']}} {{ usage_unit }}</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-500 mr-2">Min : {{usage1_stats['min']}} {{ usage_unit }}</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-200 text-red-500">Max : {{usage1_stats['max']}} {{ usage_unit }}</span>
+                </div>
+            </div>
+            <div>
+                <canvas id="usage1-chart" class="w-full h-60"></canvas>
+            </div>
+        </div>
+        <div class="p-4 shadow-lg border-2 border-gray-300  mb-5  h-full w-full">
+            <div>
+                <p class="text-xl font-bold">{{ usage_name  }} 2</p>
+                <div class="flex mt-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-200 text-orange-500 mr-2">Avg : {{usage2_stats['avg']}} {{ usage_unit }}</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-500 mr-2">Min : {{usage2_stats['min']}} {{ usage_unit }}</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-200 text-red-500">Max : {{usage2_stats['max']}} {{ usage_unit }}</span>
+                </div>
+            </div>
+            <div>
+                <canvas id="usage2-chart" class="w-full h-60"></canvas>
+            </div>
+        </div>
+        
+        <div class="p-3 mt-4">
+            <div class="flex items-center">
+                <img src="{{ url_for('static', filename='sensor.jpg') }}" width="100px" height="100px" class="mr-4">
+                <h2 class="text-2xl font-bold">Built In Sensor</h2>
+            </div>
+        </div>
+        <div class="border-t border-black mb-3"></div>
+        <div class="p-4 shadow-lg border-2 border-gray-300 h-full w-full">
+            <div>
+                <p class="text-xl font-bold">{{ t_name  }}</p>
+                <div class="flex mt-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-200 text-orange-500 mr-2">Avg : {{t_stats["avg"]}} {{ t_unit }}</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-500 mr-2">Min : {{t_stats["min"]}} {{ t_unit }}</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-200 text-red-500">Max : {{t_stats["max"]}} {{ t_unit }}</span>
+                </div>
+            </div>
+            <div>
+                <canvas id="temperature-chart" class="w-full h-60"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+     
+        // Get the canvas element
+        const cpu_canvas = document.getElementById('cpu-chart');
+
+        // Create the chart
+        const cpu_chart = new Chart(cpu_canvas, {
+            type: 'line',
+            data: {
+                labels: {{cpu_ts_values }},
+                datasets: [{
+                    label: '',
+                    data: {{cpu_value_values}},
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                plugins: {
+                    legend :{
+                        display: false
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+
+        
+
+        // Get the canvas element
+        const temperature_canvas = document.getElementById('temperature-chart');
+
+        // Create the chart
+        const temperature_chart = new Chart(temperature_canvas, {
+            type: 'line',
+            data: {
+                labels: {{t_ts_values }},
+                datasets: [{
+                    label: '',
+                    data: {{t_value_values}},
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                plugins: {
+                    legend :{
+                        display: false
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+
+        // Get the canvas element
+        const usage1_canvas = document.getElementById('usage1-chart');
+
+        // Create the chart
+        const usage1_chart = new Chart(usage1_canvas, {
+            type: 'line',
+            data: {
+                labels: {{usage1_ts_values }},
+                datasets: [{
+                    label: '',
+                    data: {{usage1_value_values}},
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                plugins: {
+                    legend :{
+                        display: false
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+
+        // Get the canvas element
+        const usage2_canvas = document.getElementById('usage2-chart');
+
+        // Create the chart
+        const usage2_chart = new Chart(usage2_canvas, {
+            type: 'line',
+            data: {
+                labels: {{usage2_ts_values }},
+                datasets: [{
+                    label: '',
+                    data: {{usage2_value_values}},
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                plugins: {
+                    legend :{
+                        display: false
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+
+        // Update chart size on window resize
+        function updateChartSize() {
+            chart.resize();
+        }
+
+        window.addEventListener('resize', updateChartSize);
+    </script>
+</body>
+</html>
